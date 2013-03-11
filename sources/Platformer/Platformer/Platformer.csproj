@@ -120,6 +120,10 @@
       <Project>{A8FE84D9-93FA-4348-9671-C1870F0FE06C}</Project>
       <Name>Utils</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Farseer Physics Engine 3.3.1 XNA\Farseer Physics XNA.csproj">
+      <Project>{0A850700-1ABB-4288-A391-6726B90EBEB9}</Project>
+      <Name>Farseer Physics XNA</Name>
+    </ProjectReference>
     <ProjectReference Include="..\PlatformerContent\PlatformerContent.contentproj">
       <Name>PlatformerContent</Name>
       <XnaReferenceType>Content</XnaReferenceType>
