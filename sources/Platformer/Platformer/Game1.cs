@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Xml;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Content;
@@ -135,6 +136,7 @@ namespace Platformer {
             }
         }
         class GameWorld {
+            Matrix view;
             World world = new World ( new Vector2 ( 0, 9.8f ) );
             Dictionary<string, Object> bodies = new Dictionary<string, Object> ();
 
@@ -253,82 +255,109 @@ namespace Platformer {
                 }
             }
 
+            Vector2 myCenter;
 
-            public GameWorld () {
+            public GameWorld ( Vector2 center ) {
+                view = Matrix.Identity;
+                myCenter = center;
             }
 
             public void LoadContent ( ContentManager content ) {
                 Converter.SetRation ( 64.0f );
 
+                XmlDocument map = new XmlDocument ();
+                map.Load ( "map1.xml" );
 
-                Object b = new Object ( world, 40, 70,
-                                        new Vector2 ( 30, 100 ),
-                                        content.Load<Texture2D> ( "hero_sprite" ), 0.00f,
-                                        false );
-                b.InitAnimation ( new Object.Frame {
-                    spriteRect = new Rectangle ( 0, 0, 168/3, 720/9 ),
-                    milliseconds = 100
-                }, new Object.Frame {
-                    spriteRect = new Rectangle ( 168/3, 0, 168/3, 720/9 ),
-                    milliseconds = 100
-                }, new Object.Frame {
-                    spriteRect = new Rectangle ( 2*168/3, 0, 168/3, 720/9 ),
-                    milliseconds = 100
-                } );
-                b.AddAnimation ( "move", new Object.Frame {
-                    spriteRect = new Rectangle ( 0, 720/9, 168/3, 720/9 ),
-                    milliseconds = 100
-                }, new Object.Frame {
-                    spriteRect = new Rectangle ( 168/3, 720/9, 168/3, 720/9 ),
-                    milliseconds = 100
-                }, new Object.Frame {
-                    spriteRect = new Rectangle ( 2*168/3, 720/9, 168/3, 720/9 ),
-                    milliseconds = 100
-                } );
-                bodies.Add ( "hero", b );
+                int groundCounter = 0;
+                foreach ( XmlNode node in map.ChildNodes[ 1 ].ChildNodes ) {
+                    string[] pos = node.Attributes.GetNamedItem ( "position" ).Value.Split ( ',' );
+                    string[] pSize = node.Attributes.GetNamedItem ( "physize" ).Value.Split ( ',' );
+                    string texture = node.Attributes.GetNamedItem ( "texturename" ).Value;
+                    string isStatic = node.Attributes.GetNamedItem ( "static" ).Value;
+                    switch ( node.Name ) {
+                        case "hero": {
+                                Object b = new Object ( world,
+                                                        int.Parse ( pSize[ 0 ] ),
+                                                        int.Parse ( pSize[ 1 ] ),
+                                                        new Vector2 ( int.Parse ( pos[ 0 ] ), int.Parse ( pos[ 1 ] ) ),
+                                                        content.Load<Texture2D> ( texture ),
+                                                        0.00f,
+                                                        isStatic == "true" );
+                                b.InitAnimation ( new Object.Frame {
+                                    spriteRect = new Rectangle ( 0, 0, 168/3, 720/9 ),
+                                    milliseconds = 100
+                                }, new Object.Frame {
+                                    spriteRect = new Rectangle ( 168/3, 0, 168/3, 720/9 ),
+                                    milliseconds = 100
+                                }, new Object.Frame {
+                                    spriteRect = new Rectangle ( 2*168/3, 0, 168/3, 720/9 ),
+                                    milliseconds = 100
+                                } );
+                                b.AddAnimation ( "move", new Object.Frame {
+                                    spriteRect = new Rectangle ( 0, 720/9, 168/3, 720/9 ),
+                                    milliseconds = 100
+                                }, new Object.Frame {
+                                    spriteRect = new Rectangle ( 168/3, 720/9, 168/3, 720/9 ),
+                                    milliseconds = 100
+                                }, new Object.Frame {
+                                    spriteRect = new Rectangle ( 2*168/3, 720/9, 168/3, 720/9 ),
+                                    milliseconds = 100
+                                } );
+                                bodies.Add ( "hero", b );
+                                break;
+                            }
+                        case "ground": {
+                                Object b = new Object ( world,
+                                                        int.Parse ( pSize[ 0 ] ),
+                                                        int.Parse ( pSize[ 1 ] ),
+                                                        new Vector2 ( int.Parse ( pos[ 0 ] ), int.Parse ( pos[ 1 ] ) ),
+                                                        content.Load<Texture2D> ( texture ),
+                                                        0.00f,
+                                                        isStatic == "true" );
+                                b.InitAnimation ( new Object.Frame {
+                                    spriteRect = new Rectangle ( 0, 148, 128, 128 ),
+                                    milliseconds = 100
+                                } );
+                                bodies.Add ( "tile" + groundCounter++, b );
+                                break;
+                            }
+                        default:
+                            break;
+                    }
+                }
 
+                /*Texture2D tileset = content.Load<Texture2D> ( "tile_set" );
+                
 
-                Texture2D tileset = content.Load<Texture2D> ( "tile_set" );
-                b = new Object ( world, 128, 128,
-                                        new Vector2 ( 64, 600-64 ),
-                                        tileset, 0.01f,
-                                        true );
-
-                b.InitAnimation ( new Object.Frame {
-                    spriteRect = new Rectangle ( 0, 148, 128, 128 ),
-                    milliseconds = 100
-                } );
-                bodies.Add ( "tile", b );
-
-                b = new Object ( world, 128, 128,
+                _b = new Object ( world, 128, 128,
                                          new Vector2 ( 64*3, 600-64 ),
                                          tileset, 0.01f,
                                          true );
-                b.InitAnimation ( new Object.Frame {
+                _b.InitAnimation ( new Object.Frame {
                     spriteRect = new Rectangle ( 0, 148, 128, 128 ),
                     milliseconds = 100
                 } );
-                bodies.Add ( "tile2", b );
+                bodies.Add ( "tile2", _b );
 
-                b = new Object ( world, 128, 128,
+                _b = new Object ( world, 128, 128,
                                         new Vector2 ( 64*7, 600-64 ),
                                         tileset, 0.01f,
                                         true );
-                b.InitAnimation ( new Object.Frame {
+                _b.InitAnimation ( new Object.Frame {
                     spriteRect = new Rectangle ( 0, 148, 128, 128 ),
                     milliseconds = 100
                 } );
-                bodies.Add ( "tile3", b );
+                bodies.Add ( "tile3", _b );
 
-                b = new Object ( world, 128, 128,
+                _b = new Object ( world, 128, 128,
                                         new Vector2 ( 64, 600-64*5 ),
                                         tileset, 0.01f,
                                         true );
-                b.InitAnimation ( new Object.Frame {
+                _b.InitAnimation ( new Object.Frame {
                     spriteRect = new Rectangle ( 0, 148, 128, 128 ),
                     milliseconds = 100
                 } );
-                bodies.Add ( "tile4", b );
+                bodies.Add ( "tile4", _b );*/
             }
 
             const float walkSpeed = 2f;
@@ -365,17 +394,19 @@ namespace Platformer {
 
                 bodies[ "hero" ].Update ( gt );
 
-                world.Step ( (float)gt.ElapsedGameTime.Milliseconds / 1000f );
+                world.Step ( (float)gt.ElapsedGameTime.Milliseconds / 500f );
             }
 
             public void Draw ( SpriteBatch spriteBatch ) {
+                view = Matrix.CreateTranslation ( new Vector3 ( myCenter - Converter.ToPixelsVec ( bodies[ "hero" ].Position ), 0f ) );
+                spriteBatch.Begin ( SpriteSortMode.BackToFront, null, null, null, null, null, view );
                 foreach ( Object obj in bodies.Values ) {
                     obj.Draw ( spriteBatch );
-                }
+                } spriteBatch.End ();
             }
 
             public string Debug () {
-                return "";
+                return bodies[ "hero" ].Position.X + " " + bodies[ "hero" ].Position.Y;
             }
         }
         #endregion
@@ -450,7 +481,7 @@ namespace Platformer {
             changeState ( GameState.menu );
 
             pfTree.Initialize ();
-            game = new GameWorld ();
+            game = new GameWorld ( new Vector2 ( graphics.PreferredBackBufferWidth/2, graphics.PreferredBackBufferHeight/2 ) );
 
             base.Initialize ();
         }
@@ -512,12 +543,13 @@ namespace Platformer {
                     spriteBatch.Begin ();
                     spriteBatch.DrawString ( font, gState.ToString (), new Vector2 ( 30 ), Color.Black );
                     spriteBatch.End ();
+                    game.Draw ( spriteBatch );
                     break;
                 case GameState.game:
                     spriteBatch.Begin ( SpriteSortMode.BackToFront, BlendState.AlphaBlend );
                     spriteBatch.DrawString ( font, gState.ToString () + game.Debug (), new Vector2 ( 30 ), Color.Black );
-                    game.Draw ( spriteBatch );
                     spriteBatch.End ();
+                    game.Draw ( spriteBatch );
                     break;
                 case GameState.pifagorTreeDemo:
                     pfTree.Draw ( gameTime );

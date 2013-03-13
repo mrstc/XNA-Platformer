@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<world>
+  <hero position="30,100" physize="40,70" texturename="hero_sprite" static="false">
+  </hero>
+  <ground position="64,200" physize="128,128" texturename="tile_set" static="true" />
+  <ground position="64,400" physize="128,128" texturename="tile_set" static="true" />
+  <ground position="200,400" physize="128,128" texturename="tile_set" static="true" />
+</world>

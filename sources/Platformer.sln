@@ -9,8 +9,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Farseer Physics XNA", "Plat
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utils", "Utils\Utils.csproj", "{A8FE84D9-93FA-4348-9671-C1870F0FE06C}"
 EndProject
-Project("{F088123C-0E9E-452A-89E6-6BA2F21D5CAC}") = "ModelingProject1", "ModelingProject1\ModelingProject1.modelproj", "{4C2C7925-D184-4825-95B2-FF26BA161811}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -71,18 +69,6 @@ Global
 		{A8FE84D9-93FA-4348-9671-C1870F0FE06C}.Release|x86.ActiveCfg = Release|x86
 		{A8FE84D9-93FA-4348-9671-C1870F0FE06C}.Release|x86.Build.0 = Release|x86
 		{A8FE84D9-93FA-4348-9671-C1870F0FE06C}.Release|Xbox 360.ActiveCfg = Release|x86
-		{4C2C7925-D184-4825-95B2-FF26BA161811}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4C2C7925-D184-4825-95B2-FF26BA161811}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4C2C7925-D184-4825-95B2-FF26BA161811}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{4C2C7925-D184-4825-95B2-FF26BA161811}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{4C2C7925-D184-4825-95B2-FF26BA161811}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{4C2C7925-D184-4825-95B2-FF26BA161811}.Debug|Xbox 360.ActiveCfg = Debug|Any CPU
-		{4C2C7925-D184-4825-95B2-FF26BA161811}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4C2C7925-D184-4825-95B2-FF26BA161811}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4C2C7925-D184-4825-95B2-FF26BA161811}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{4C2C7925-D184-4825-95B2-FF26BA161811}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{4C2C7925-D184-4825-95B2-FF26BA161811}.Release|x86.ActiveCfg = Release|Any CPU
-		{4C2C7925-D184-4825-95B2-FF26BA161811}.Release|Xbox 360.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
