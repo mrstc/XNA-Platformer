@@ -14,18 +14,17 @@ namespace Platformer {
         #region NewTypes
         enum GameState { menu, setup, game, editor };
         delegate void Event ();
-        // working; seems unlike complete
+        // working; seems like complete... maybe only groups binding add in the future
         class KeyboardManager {
-            public struct Pressure {
-                public Event e;
-                public PressType type;
-            }
-            SortedSet<Keys> pressedKeys = new SortedSet<Keys> ();
-            Dictionary< Keys, Pressure > binds = new Dictionary<Keys, Pressure> ();
+            SortedSet< Keys > pressedKeys = new SortedSet<Keys> ();
+            Dictionary < PressType, Dictionary< Keys, Event > > binds = new Dictionary<PressType, Dictionary<Keys, Event>>();
 
             public enum PressType { once, ever };
 
             public KeyboardManager () {
+                foreach ( PressType t in Enum.GetValues ( typeof ( PressType ) ) ) {
+                    binds.Add ( t, new Dictionary<Keys, Event> () );
+                }
             }
 
             public void checkKeys () {
@@ -36,10 +35,16 @@ namespace Platformer {
                     }
                 }
                 Event res = null;
-                foreach ( var el in binds ) {
-                    if ( Keyboard.GetState ().IsKeyDown ( el.Key ) && !pressedKeys.Contains ( el.Key ) || el.Value.type == PressType.ever ) {
+                foreach ( var el in binds[ PressType.once ] ) {
+                    if ( Keyboard.GetState ().IsKeyDown ( el.Key ) && !pressedKeys.Contains ( el.Key ) ) {
                         pressedKeys.Add ( el.Key );
-                        res += el.Value.e;
+                        res += el.Value;
+                    }
+                }
+                foreach ( var el in binds[ PressType.ever ] ) {
+                    if ( Keyboard.GetState ().IsKeyDown ( el.Key ) ) {
+                        pressedKeys.Add ( el.Key );
+                        res += el.Value;
                     }
                 }
                 if ( res != null ) {
@@ -47,14 +52,17 @@ namespace Platformer {
                 }
             }
 
-            public void bind ( Keys k, Pressure p ) {
-                binds.Add ( k, p );
+            public void bind ( Keys k, PressType t, Event e ) {
+                binds[t].Add ( k, e );
             }
 
-            public void unbindAll ( Keys k ) {
-                if ( binds.ContainsKey ( k ) ) {
-                    binds.Remove ( k );
+            public void unbindKey ( Keys k ) {
+                foreach ( PressType t in Enum.GetValues ( typeof ( PressType ) ) ) {
+                    if ( binds[t].ContainsKey ( k ) ) {
+                        binds[t].Remove ( k );
+                    }
                 }
+
             }
 
             public bool this [ Keys k, PressType t = PressType.once ] {
@@ -115,6 +123,7 @@ namespace Platformer {
         }
         #endregion
 
+
         #region Properties
 
         GameState gState;
@@ -128,7 +137,7 @@ namespace Platformer {
         #endregion
 
 
-        #region Initializes
+        #region InitializesAndDeinitializes
 
         public Game1 () {
             kbManager = new KeyboardManager ();
@@ -146,30 +155,21 @@ namespace Platformer {
         }
 
         void changeState ( GameState state ) {
-            kbManager.unbindAll ( Keys.Down );
-            kbManager.unbindAll ( Keys.Up );
-            kbManager.unbindAll ( Keys.Enter );
+            kbManager.unbindKey ( Keys.Down );
+            kbManager.unbindKey ( Keys.Up );
+            kbManager.unbindKey ( Keys.Enter );
 
             gState = state;
-            KeyboardManager.Pressure p;
             switch ( state ) {
                 case GameState.setup:
-                    p.e = setup.down;
-                    p.type = KeyboardManager.PressType.once;
-                    kbManager.bind ( Keys.Down, p );
-                    p.e = setup.up;
-                    kbManager.bind ( Keys.Up, p );
-                    p.e = setup.enter;
-                    kbManager.bind ( Keys.Enter, p );
+                    kbManager.bind ( Keys.Down, KeyboardManager.PressType.once, setup.down );
+                    kbManager.bind ( Keys.Up, KeyboardManager.PressType.once, setup.up );
+                    kbManager.bind ( Keys.Enter, KeyboardManager.PressType.once, setup.enter );
                     break;
                 case GameState.menu:
-                    p.e = menu.down;
-                    p.type = KeyboardManager.PressType.once;
-                    kbManager.bind ( Keys.Down, p );
-                    p.e = menu.up;
-                    kbManager.bind ( Keys.Up, p );
-                    p.e = menu.enter;
-                    kbManager.bind ( Keys.Enter, p );
+                    kbManager.bind ( Keys.Down, KeyboardManager.PressType.once, menu.down );
+                    kbManager.bind ( Keys.Up, KeyboardManager.PressType.once, menu.up );
+                    kbManager.bind ( Keys.Enter, KeyboardManager.PressType.once, menu.enter );
                     break;
                 case GameState.editor:
                     break;
@@ -189,11 +189,10 @@ namespace Platformer {
             font = Content.Load<SpriteFont> ( "Font" );
         }
 
-        #endregion
-
-
         protected override void UnloadContent () {
         }
+
+        #endregion
 
 
         #region UpdateAndDraw
