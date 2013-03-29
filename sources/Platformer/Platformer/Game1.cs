@@ -9,15 +9,19 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Media;
 
+using Utils;
+
 namespace Platformer {
     public class Game1 : Microsoft.Xna.Framework.Game {
         #region NewTypes
-        enum GameState { menu, setup, game, editor };
+        enum GameState { menu, setup, game, editor, pifagorTreeDemo };
+
         delegate void Event ();
         // working; seems like complete... maybe only groups binding add in the future
         class KeyboardManager {
             SortedSet< Keys > pressedKeys = new SortedSet<Keys> ();
             Dictionary < PressType, Dictionary< Keys, Event > > binds = new Dictionary<PressType, Dictionary<Keys, Event>>();
+
 
             public enum PressType { once, ever };
 
@@ -126,6 +130,8 @@ namespace Platformer {
 
         #region Properties
 
+        PifagorasTree pfTree;
+
         GameState gState;
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
@@ -143,8 +149,9 @@ namespace Platformer {
             kbManager = new KeyboardManager ();
             menu = new Menu ();
             menu.Add ( "1) Start Game", () => changeState ( GameState.game ) );
-            menu.Add ( "2) Setup", () => changeState ( GameState.setup ) );
-            menu.Add ( "3) Exit Game", () => this.Exit () );
+            menu.Add ( "2) Pifagor's Tree Demo", () => changeState ( GameState.pifagorTreeDemo ) );
+            menu.Add ( "3) Setup", () => changeState ( GameState.setup ) );
+            menu.Add ( "4) Exit Game", () => this.Exit () );
 
             setup = new Menu ();
             setup.Add ( "1) Toggle Fullscreen", () => graphics.ToggleFullScreen () );
@@ -152,6 +159,8 @@ namespace Platformer {
 
             graphics = new GraphicsDeviceManager ( this );
             Content.RootDirectory = "Content";
+
+            pfTree = new PifagorasTree ( this );
         }
 
         void changeState ( GameState state ) {
@@ -180,6 +189,9 @@ namespace Platformer {
 
         protected override void Initialize () {
             changeState ( GameState.menu );
+
+            pfTree.Initialize ();
+
             base.Initialize ();
         }
 
@@ -187,6 +199,8 @@ namespace Platformer {
             spriteBatch = new SpriteBatch ( GraphicsDevice );
 
             font = Content.Load<SpriteFont> ( "Font" );
+
+            pfTree.publicLoadContent ();
         }
 
         protected override void UnloadContent () {
@@ -203,12 +217,16 @@ namespace Platformer {
             switch ( gState ) {
                 case GameState.menu:
                     break;
+                case GameState.editor:
+                case GameState.game: {
+                        if ( kbManager[ Keys.Tab ] ) {
+                            changeState ( ( gState == GameState.editor ? GameState.game : GameState.editor ) );
+                        }
+                        break;
+                    }
                 default: {
                         if ( kbManager [ Keys.Escape ] ) {
                             changeState ( GameState.menu );
-                        }
-                        if ( kbManager [ Keys.Tab ] ) {
-                            changeState ( (gState == GameState.editor ? GameState.game : GameState.editor) );
                         }
                         break;
                     }
@@ -237,6 +255,9 @@ namespace Platformer {
                     spriteBatch.Begin ();
                     spriteBatch.DrawString ( font, gState.ToString (), new Vector2 ( 30 ), Color.Black );
                     spriteBatch.End ();
+                    break;
+                case GameState.pifagorTreeDemo:
+                    pfTree.Draw ( gameTime );
                     break;
             }
 
