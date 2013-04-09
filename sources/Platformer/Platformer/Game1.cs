@@ -1,3 +1,6 @@
+//#define SCALE
+
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -165,16 +168,19 @@ namespace Platformer {
                     public int milliseconds;
                 }
 
+                public SpriteEffects effects = SpriteEffects.None;
                 public int h, w;
                 Texture2D texture;
                 string currentAnimation;
                 int currentFrameIndex;
                 int msFrameLeft = 0;
+                float myDepth;
 
                 Dictionary < string, List < Frame > > animations = new Dictionary<string,List<Frame>> ();
 
-                public Object ( World world, int width, int height, Vector2 position, Texture2D text, bool isStatic ) :
+                public Object ( World world, int width, int height, Vector2 position, Texture2D text, float depth, bool isStatic ) :
                   base ( world ) {
+                    myDepth = depth;
                     w = width;
                     h = height;
                     texture = text;
@@ -207,17 +213,16 @@ namespace Platformer {
 
                 public void PlayAnimation ( string name ) {
                     if ( !animations.ContainsKey ( name ) )
-                        throw new Exception ( "Cannot play uninitialised animatio!" );
+                        throw new Exception ( "Cannot play uninitialised animation!" );
                     currentAnimation = name;
                     currentFrameIndex = 0;
                     msFrameLeft = animations[ currentAnimation ][ ++currentFrameIndex ].milliseconds;
                 }
 
-                /// <summary>
-                /// Sets the default animation
-                /// </summary>
-                public void PauseAnimation () {
+                public void SetDefaultAnimation () {
                     currentAnimation = "default";
+                    currentFrameIndex = 0;
+                    msFrameLeft = animations[ currentAnimation ][ currentFrameIndex ].milliseconds;
                 }
 
                 public void Update ( GameTime gameTime ) {
@@ -234,16 +239,17 @@ namespace Platformer {
                 }
 
                 public void Draw ( SpriteBatch batch ) {
+                    var rect = animations[ currentAnimation ][ currentFrameIndex ].spriteRect;
+
                     batch.Draw ( texture,
-                        new Rectangle ( (int)Converter.ToPixels ( Position.X ),
-                                        (int)Converter.ToPixels ( Position.Y ),
-                                        w, h ),
-                        animations[ currentAnimation ][ currentFrameIndex ].spriteRect,
+                        Converter.ToPixelsVec ( this.Position ),
+                        rect,
                         Color.White,
                         0.0f,
-                        new Vector2 ( w/2f, h/2f ),
-                        SpriteEffects.None,
-                        0 );
+                        new Vector2 ( rect.Width/2f, rect.Height/2f ),
+                        1.0f,
+                        effects,
+                        myDepth );
                 }
             }
 
@@ -255,18 +261,28 @@ namespace Platformer {
                 Converter.SetRation ( 64.0f );
 
 
-                Object b = new Object ( world, 40, 60,
+                Object b = new Object ( world, 40, 70,
                                         new Vector2 ( 30, 100 ),
-                                        content.Load<Texture2D> ( "hero_sprite" ),
+                                        content.Load<Texture2D> ( "hero_sprite" ), 0.00f,
                                         false );
                 b.InitAnimation ( new Object.Frame {
-                    spriteRect = new Rectangle ( 3, 17, 45, 62 ),
+                    spriteRect = new Rectangle ( 0, 0, 168/3, 720/9 ),
                     milliseconds = 100
                 }, new Object.Frame {
-                    spriteRect = new Rectangle ( 58, 17, 45, 62 ),
+                    spriteRect = new Rectangle ( 168/3, 0, 168/3, 720/9 ),
                     milliseconds = 100
                 }, new Object.Frame {
-                    spriteRect = new Rectangle ( 116, 17, 45, 62 ),
+                    spriteRect = new Rectangle ( 2*168/3, 0, 168/3, 720/9 ),
+                    milliseconds = 100
+                } );
+                b.AddAnimation ( "move", new Object.Frame {
+                    spriteRect = new Rectangle ( 0, 720/9, 168/3, 720/9 ),
+                    milliseconds = 100
+                }, new Object.Frame {
+                    spriteRect = new Rectangle ( 168/3, 720/9, 168/3, 720/9 ),
+                    milliseconds = 100
+                }, new Object.Frame {
+                    spriteRect = new Rectangle ( 2*168/3, 720/9, 168/3, 720/9 ),
                     milliseconds = 100
                 } );
                 bodies.Add ( "hero", b );
@@ -275,7 +291,7 @@ namespace Platformer {
                 Texture2D tileset = content.Load<Texture2D> ( "tile_set" );
                 b = new Object ( world, 128, 128,
                                         new Vector2 ( 64, 600-64 ),
-                                        tileset,
+                                        tileset, 0.01f,
                                         true );
 
                 b.InitAnimation ( new Object.Frame {
@@ -286,7 +302,7 @@ namespace Platformer {
 
                 b = new Object ( world, 128, 128,
                                          new Vector2 ( 64*3, 600-64 ),
-                                         tileset,
+                                         tileset, 0.01f,
                                          true );
                 b.InitAnimation ( new Object.Frame {
                     spriteRect = new Rectangle ( 0, 148, 128, 128 ),
@@ -296,29 +312,51 @@ namespace Platformer {
 
                 b = new Object ( world, 128, 128,
                                         new Vector2 ( 64*7, 600-64 ),
-                                        tileset,
+                                        tileset, 0.01f,
                                         true );
                 b.InitAnimation ( new Object.Frame {
                     spriteRect = new Rectangle ( 0, 148, 128, 128 ),
                     milliseconds = 100
                 } );
                 bodies.Add ( "tile3", b );
+
+                b = new Object ( world, 128, 128,
+                                        new Vector2 ( 64, 600-64*5 ),
+                                        tileset, 0.01f,
+                                        true );
+                b.InitAnimation ( new Object.Frame {
+                    spriteRect = new Rectangle ( 0, 148, 128, 128 ),
+                    milliseconds = 100
+                } );
+                bodies.Add ( "tile4", b );
             }
 
-            Vector2 velocity = new Vector2 ( 0 );
             const float walkSpeed = 2f;
+            bool heroMoveFlag = false;
 
             public void Update ( GameTime gt ) {
-                velocity = new Vector2 ( bodies[ "hero" ].LinearVelocity.X, 0 );
-                bodies [ "hero" ].ApplyLinearImpulse ( -velocity );
+                bodies [ "hero" ].ApplyLinearImpulse ( new Vector2 ( -bodies[ "hero" ].LinearVelocity.X, 0 ) );
                 if ( kbManager [ Keys.A, KeyboardManager.PressType.ever ] && kbManager [ Keys.D, KeyboardManager.PressType.ever ] ) {
-                    velocity = new Vector2 ( 0 );
+                    //bodies[ "hero" ].effects = SpriteEffects.None;
+                    heroMoveFlag = false;
+                    bodies[ "hero" ].SetDefaultAnimation ();
                 } else if ( kbManager [ Keys.A, KeyboardManager.PressType.ever ] ) {
-                    bodies [ "hero" ].ApplyLinearImpulse ( velocity = new Vector2 ( -walkSpeed, 0 ) );
-                } else if ( kbManager [ Keys.D, KeyboardManager.PressType.ever ] ) {
-                    bodies [ "hero" ].ApplyLinearImpulse ( velocity = new Vector2 ( walkSpeed, 0 ) );
-                } else {
-                    velocity = new Vector2 ( 0 );
+                    if ( !heroMoveFlag ) {
+                        bodies[ "hero" ].PlayAnimation ( "move" );
+                        heroMoveFlag = true;
+                    }
+                    bodies[ "hero" ].ApplyLinearImpulse ( new Vector2 ( -walkSpeed, 0 ) );
+                    bodies[ "hero" ].effects = SpriteEffects.FlipHorizontally;
+                } else if ( kbManager[ Keys.D, KeyboardManager.PressType.ever ] ) {
+                    if ( !heroMoveFlag ) {
+                        bodies[ "hero" ].PlayAnimation ( "move" );
+                        heroMoveFlag = true;
+                    }
+                    bodies[ "hero" ].ApplyLinearImpulse ( new Vector2 ( walkSpeed, 0 ) );
+                    bodies[ "hero" ].effects = SpriteEffects.None;
+                } else if ( heroMoveFlag ) {
+                    heroMoveFlag = false;
+                    bodies[ "hero" ].SetDefaultAnimation ();
                 }
 
                 if ( kbManager[ Keys.W, KeyboardManager.PressType.once ] ) {
@@ -476,7 +514,7 @@ namespace Platformer {
                     spriteBatch.End ();
                     break;
                 case GameState.game:
-                    spriteBatch.Begin ();
+                    spriteBatch.Begin ( SpriteSortMode.BackToFront, BlendState.AlphaBlend );
                     spriteBatch.DrawString ( font, gState.ToString () + game.Debug (), new Vector2 ( 30 ), Color.Black );
                     game.Draw ( spriteBatch );
                     spriteBatch.End ();
