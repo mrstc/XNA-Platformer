@@ -49,14 +49,14 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="hero_sprite.png">
-      <Name>hero_sprite</Name>
+    <Compile Include="sprite_hero.png">
+      <Name>sprite_hero</Name>
       <Importer>TextureImporter</Importer>
       <Processor>TextureProcessor</Processor>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Compile>
-    <Compile Include="tile_set.png">
-      <Name>tile_set</Name>
+    <Compile Include="sprite_tiles.png">
+      <Name>sprite_tiles</Name>
       <Importer>TextureImporter</Importer>
       <Processor>TextureProcessor</Processor>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

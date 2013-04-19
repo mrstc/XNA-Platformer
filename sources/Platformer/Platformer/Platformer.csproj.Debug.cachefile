@@ -1,6 +1,8 @@
 Content\Font.xnb
-Content\hero_sprite.xnb
-Content\tile_set.xnb
-Content\hero_sprite.png
-Content\tile_set.png
+Content\sprite_hero.xnb
+Content\sprite_tiles.xnb
+Content\sprite_hero.png
+Content\sprite_tiles.png
+tiles.xml
+hero.xml
 map1.xml

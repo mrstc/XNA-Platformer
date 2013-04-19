@@ -1,0 +1,31 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<texture name="sprite_hero">
+  <default>
+    <frame0 time="100">
+      <position x="0" y="0"/>
+      <size width="56" height="80"/>
+    </frame0>
+    <frame1 time="100">
+      <position x="56" y="0"/>
+      <size width="56" height="80"/>
+    </frame1>
+    <frame2 time="100">
+      <position x="112" y="0"/>
+      <size width="56" height="80"/>
+    </frame2>
+  </default>
+  <move>
+    <frame0 time="100">
+      <position x="0" y="80"/>
+      <size width="56" height="80"/>
+    </frame0>
+    <frame1 time="100">
+      <position x="56" y="80"/>
+      <size width="56" height="80"/>
+    </frame1>
+    <frame2 time="100">
+      <position x="112" y="80"/>
+      <size width="56" height="80"/>
+    </frame2>
+  </move>
+</texture>

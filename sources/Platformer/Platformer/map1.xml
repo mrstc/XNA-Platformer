@@ -1,8 +1,12 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <world>
-  <hero position="30,100" physize="40,70" texturename="hero_sprite" static="false">
-  </hero>
-  <ground position="64,200" physize="128,128" texturename="tile_set" static="true" />
-  <ground position="64,400" physize="128,128" texturename="tile_set" static="true" />
-  <ground position="200,400" physize="128,128" texturename="tile_set" static="true" />
+  <put from="hero">
+    <default name="hero" position="30,100" physize="40,65" texturename="hero_sprite" static="false" />
+  </put>
+  <put from="tiles">
+    <ground name="g1" position="64,350" physize="128,128" static="true" />
+    <ground name="g2" position="64,600" physize="128,128" static="true" />
+    <ground name="g3" position="197,600" physize="128,128" static="true" />
+    <water name="w1" position="400,600" physize="128,128" static="true" />
+  </put>
 </world>

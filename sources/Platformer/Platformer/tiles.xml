@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<texture name="sprite_tiles">
+  <ground>
+    <frame0 time="Infinity">
+      <position x="0" y="148" />
+      <size width="128" height="128" />
+    </frame0>
+  </ground>
+  <water>
+    <frame0 time="Infinity">
+      <position x="256" y="148" />
+      <size width="128" height="128" />
+    </frame0>
+  </water>
+</texture>
