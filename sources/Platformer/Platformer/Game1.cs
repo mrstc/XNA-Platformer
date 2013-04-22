@@ -24,71 +24,6 @@ namespace Platformer {
         enum GameState { menu, setup, game, editor, pifagorTreeDemo };
 
         public delegate void Event ();
-        // working; seems like complete... maybe only groups binding add in the future
-        public class KeyboardManager {
-            SortedSet< Keys > pressedKeys = new SortedSet<Keys> ();
-            Dictionary < PressType, Dictionary< Keys, Event > > binds = new Dictionary<PressType, Dictionary<Keys, Event>>();
-
-
-            public enum PressType { once, ever };
-
-            public KeyboardManager () {
-                foreach ( PressType t in Enum.GetValues ( typeof ( PressType ) ) ) {
-                    binds.Add ( t, new Dictionary<Keys, Event> () );
-                }
-            }
-
-            public void checkKeys () {
-                SortedSet<Keys> pressedKeys_t = new SortedSet<Keys> ( pressedKeys );
-                foreach ( Keys k in pressedKeys_t ) {
-                    if ( Keyboard.GetState ().IsKeyUp ( k ) ) {
-                        pressedKeys.Remove ( k );
-                    }
-                }
-                Event res = null;
-                foreach ( var el in binds[ PressType.once ] ) {
-                    if ( Keyboard.GetState ().IsKeyDown ( el.Key ) && !pressedKeys.Contains ( el.Key ) ) {
-                        pressedKeys.Add ( el.Key );
-                        res += el.Value;
-                    }
-                }
-                foreach ( var el in binds[ PressType.ever ] ) {
-                    if ( Keyboard.GetState ().IsKeyDown ( el.Key ) ) {
-                        pressedKeys.Add ( el.Key );
-                        res += el.Value;
-                    }
-                }
-                if ( res != null ) {
-                    res ();
-                }
-            }
-
-            public void bind ( Keys k, PressType t, Event e ) {
-                binds[t].Add ( k, e );
-            }
-
-            public void unbindKey ( Keys k ) {
-                foreach ( PressType t in Enum.GetValues ( typeof ( PressType ) ) ) {
-                    if ( binds[t].ContainsKey ( k ) ) {
-                        binds[t].Remove ( k );
-                    }
-                }
-
-            }
-
-            public bool this [ Keys k, PressType t = PressType.once ] {
-                get {
-                    bool res = false;
-                    if ( Keyboard.GetState ().IsKeyDown ( k ) ) {
-                        if ( !pressedKeys.Contains ( k ) || t == PressType.ever ) {
-                            res = true;
-                            pressedKeys.Add ( k );
-                        }
-                    }
-                    return res;
-                }
-            }
-        }
         public class Menu {
             Dictionary < String, Event > menu = new Dictionary<string,Event>();
             int curr = 0;
@@ -137,24 +72,28 @@ namespace Platformer {
 
         #region Properties
         static public KeyboardManager kbManager;
+        static public GameConsole console;
 
         PifagorasTree pfTree;
         GameWorld game;
-        Cleaner clnscr;
 
         GameState gState;
-        public GraphicsDeviceManager graphics;
-        SpriteBatch spriteBatch;
-        SpriteFont font;
         Menu menu;
         Menu setup;
+
+        GraphicsDeviceManager graphics;
+        SpriteBatch spriteBatch;
+        SpriteFont font;
+
+        float fpsCounter = 0;
         #endregion
 
 
         #region InitializesAndDeinitializes
 
         public Game1 () {
-            kbManager = new KeyboardManager ();
+            kbManager = new KeyboardManager ( this );
+            console = new GameConsole ( this );
             menu = new Menu ();
             menu.Add ( "1) Start Game", () => changeState ( GameState.game ) );
             menu.Add ( "2) Pifagor's Tree Demo", () => changeState ( GameState.pifagorTreeDemo ) );
@@ -171,7 +110,6 @@ namespace Platformer {
             graphics.PreferredBackBufferWidth = 800;
             graphics.ApplyChanges();
 
-            clnscr = new Cleaner ( this );
 
             game = new GameWorld ( this );
 
@@ -181,23 +119,21 @@ namespace Platformer {
         }
 
         void changeState ( GameState state ) {
-            kbManager.unbindKey ( Keys.Down );
-            kbManager.unbindKey ( Keys.Up );
-            kbManager.unbindKey ( Keys.Enter );
+            kbManager.UnbindAll ();
 
             game.Enabled = false;
 
             gState = state;
             switch ( state ) {
                 case GameState.setup:
-                    kbManager.bind ( Keys.Down, KeyboardManager.PressType.once, setup.down );
-                    kbManager.bind ( Keys.Up, KeyboardManager.PressType.once, setup.up );
-                    kbManager.bind ( Keys.Enter, KeyboardManager.PressType.once, setup.enter );
+                    kbManager[ Keys.Down ] = ( bool b ) => { if (!b) setup.down (); };
+                    kbManager[ Keys.Up ] = ( bool b ) => { if (!b) setup.up (); };
+                    kbManager[ Keys.Enter ] = ( bool b ) => { if (!b) setup.enter (); };
                     break;
                 case GameState.menu:
-                    kbManager.bind ( Keys.Down, KeyboardManager.PressType.once, menu.down );
-                    kbManager.bind ( Keys.Up, KeyboardManager.PressType.once, menu.up );
-                    kbManager.bind ( Keys.Enter, KeyboardManager.PressType.once, menu.enter );
+                    kbManager[ Keys.Down ] = ( bool b ) => { if (!b) menu.down (); };
+                    kbManager[ Keys.Up ] = ( bool b ) => { if (!b) menu.up (); };
+                    kbManager[ Keys.Enter ] = ( bool b ) => { if (!b) menu.enter (); };
                     break;
                 case GameState.editor:
                     break;
@@ -208,19 +144,23 @@ namespace Platformer {
         }
 
         protected override void Initialize () {
-
             Components.Add ( game );
-            Services.AddService ( typeof ( GameWorld ), game );
+            Services.AddService ( game.GetType(), game );
 
-            Components.Add ( clnscr );
-            Services.AddService ( typeof ( Cleaner ), clnscr );
+            Components.Add ( kbManager );
+            Services.AddService ( kbManager.GetType (), kbManager );
+
+            Components.Add ( console );
+            Services.AddService ( console.GetType (), console );
+
+            console.AddDrawer ( fps );
 
             pfTree.Initialize ();
 
             changeState ( GameState.menu );
 
             game.DrawOrder = 2;
-            clnscr.DrawOrder = -1;
+            console.DrawOrder = 100500;
 
             base.Initialize ();
         }
@@ -229,8 +169,6 @@ namespace Platformer {
             spriteBatch = new SpriteBatch ( GraphicsDevice );
 
             font = Content.Load<SpriteFont> ( "Font" );
-
-            //game.LoadContent ();
 
             pfTree.publicLoadContent ();
         }
@@ -244,33 +182,13 @@ namespace Platformer {
         #region UpdateAndDraw
 
         protected override void Update ( GameTime gameTime ) {
-            kbManager.checkKeys ();
-
-            switch ( gState ) {
-                case GameState.menu:
-                    break;
-                case GameState.editor:
-                case GameState.game: {
-                        game.Update ( gameTime );
-                        if ( kbManager[ Keys.Tab ] ) {
-                            changeState ( ( gState == GameState.editor ? GameState.game : GameState.editor ) );
-                        }
-                        break;
-                    }
-                default: {
-                        if ( kbManager [ Keys.Escape ] ) {
-                            changeState ( GameState.menu );
-                        }
-                        break;
-                    }
-            }
-
-
             base.Update ( gameTime );
         }
 
         protected override void Draw ( GameTime gameTime ) {
             GraphicsDevice.Clear ( Color.CornflowerBlue );
+
+            fpsCounter = 1000 / gameTime.ElapsedGameTime.Milliseconds;
 
             switch ( gState ) {
                 case GameState.setup:
@@ -279,24 +197,16 @@ namespace Platformer {
                 case GameState.menu:
                     menu.drawMenu ( spriteBatch, font );
                     break;
-                case GameState.editor:
-                    //game.Draw ( spriteBatch );
-                    spriteBatch.Begin ();
-                    spriteBatch.DrawString ( font, gState.ToString (), new Vector2 ( 30 ), Color.Black );
-                    spriteBatch.End ();
-                    break;
-                case GameState.game:
-                    //game.Draw ( spriteBatch );
-                    spriteBatch.Begin ( SpriteSortMode.BackToFront, BlendState.AlphaBlend );
-                    spriteBatch.DrawString ( font, gState.ToString () + game.Debug (), new Vector2 ( 30 ), Color.Black );
-                    spriteBatch.End ();
-                    break;
                 case GameState.pifagorTreeDemo:
                     pfTree.Draw ( gameTime );
                     break;
             }
 
             base.Draw ( gameTime );
+        }
+
+        public string fps () {
+            return "fps: " + fpsCounter;
         }
 
         #endregion

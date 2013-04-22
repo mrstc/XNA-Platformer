@@ -1,6 +1,7 @@
 Content\Font.xnb
 Content\sprite_hero.xnb
 Content\sprite_tiles.xnb
+Content\DebugFont.xnb
 Content\sprite_hero.png
 Content\sprite_tiles.png
 tiles.xml

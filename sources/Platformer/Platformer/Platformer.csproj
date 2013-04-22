@@ -107,11 +107,12 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Cleaner.cs" />
+    <Compile Include="GameConsole.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Game1.cs" />
-    <Compile Include="World.cs" />
+    <Compile Include="GameWorld.cs" />
+    <Compile Include="KeyboardManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="tiles.xml">

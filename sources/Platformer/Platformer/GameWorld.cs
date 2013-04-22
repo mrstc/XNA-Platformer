@@ -23,6 +23,7 @@ namespace Platformer {
     public class GameWorld : Microsoft.Xna.Framework.DrawableGameComponent {
         Matrix view;
         float cameraShiftX = 0, cameraShiftY = 0;
+        const float maxShift = 2.0f;
         World world = new World ( new Vector2 ( 0, 9.8f ) );
         Dictionary<string, Object> bodies = new Dictionary<string, Object> ();
 
@@ -58,13 +59,15 @@ namespace Platformer {
 
             public SpriteEffects effects = SpriteEffects.None;
             public int h, w;
+
             Texture2D texture;
-            string currentAnimation;
             int currentFrameIndex;
             Double msFrameLeft = 0;
             float myDepth;
 
             Dictionary < string, List < Frame > > animations = new Dictionary<string, List<Frame>> ();
+
+            protected string currentAnimation;
 
             public Object ( World world, int width, int height, Vector2 position, Texture2D text, float depth, bool isStatic ) :
                 base ( world ) {
@@ -113,7 +116,7 @@ namespace Platformer {
                 msFrameLeft = animations[ currentAnimation ][ currentFrameIndex ].milliseconds;
             }
 
-            public void Update ( GameTime gameTime ) {
+            public virtual void Update ( GameTime gameTime ) {
                 if ( msFrameLeft > 0 ) {
                     msFrameLeft -= gameTime.ElapsedGameTime.Milliseconds;
                 } else {
@@ -138,6 +141,55 @@ namespace Platformer {
                     1.0f,
                     effects,
                     myDepth );
+            }
+        }
+
+        class Hero : Object {
+            enum State {
+                staying,
+                movingLeft,
+                movingRight,
+                stayAtMove
+            };
+
+            State state = State.staying;
+
+            public Hero ( World world, int width, int height, Vector2 position, Texture2D text, float depth, bool isStatic ) :
+                base ( world, width, height, position, text, depth, isStatic ) {
+            }
+
+            bool first = true;
+
+            public override void Update ( GameTime gameTime ) {
+                if ( first ) {
+                    Game1.kbManager[ Keys.W ] = ( bool isReleased ) => {
+                        if ( !isReleased ) {
+                            this.ApplyLinearImpulse ( new Vector2 ( 0, -5f ) );
+                        }
+                    };
+                    Game1.kbManager[ Keys.D ] = ( bool isReleased ) => {
+                        state = ( isReleased ? ( state == State.stayAtMove ? State.movingLeft : State.staying ) : ( state == State.movingLeft ? State.stayAtMove : State.movingRight ) );
+                        effects = ( state == State.movingLeft ? SpriteEffects.FlipHorizontally : ( state == State.movingRight ? SpriteEffects.None : effects ) );
+                        PlayAnimation ( ( state == State.movingLeft || state == State.movingRight ? "move" : "default" ) );
+                    };
+                    Game1.kbManager[ Keys.A ] = ( bool isReleased ) => {
+                        state = ( isReleased ? ( state == State.stayAtMove ? State.movingRight : State.staying ) : ( state == State.movingRight ? State.stayAtMove : State.movingLeft ) );
+                        effects = ( state == State.movingLeft ? SpriteEffects.FlipHorizontally : ( state == State.movingRight ? SpriteEffects.None : effects ) );
+                        PlayAnimation ( ( state == State.movingLeft || state == State.movingRight ? "move" : "default" ) );
+                    };
+                    first = !first;
+                }
+                ApplyLinearImpulse ( new Vector2 ( -LinearVelocity.X, 0 ) );
+                switch ( state ) {
+                    case State.movingLeft:
+                        ApplyLinearImpulse ( new Vector2 ( -2f, 0f ) );
+                        break;
+                    case State.movingRight:
+                        ApplyLinearImpulse ( new Vector2 ( 2f, 0f ) );
+                        break;
+                }
+
+                base.Update ( gameTime );
             }
         }
 
@@ -181,9 +233,16 @@ namespace Platformer {
                         string name     = obj.Attributes.GetNamedItem ( "name" ).Value;
                         string animStart= node.Name;
 
-                        Object b = new Object ( world, int.Parse ( pSize[ 0 ] ), int.Parse ( pSize[ 1 ] ),
-                                                new Vector2 ( int.Parse ( pos[ 0 ] ), int.Parse ( pos[ 1 ] ) ),
-                                                texture, (name == "hero" ? 0.0f : 1.0f), isStatic );
+                        Object b;
+                        if ( name == "hero" ) {
+                            b = new Hero ( world, int.Parse ( pSize[ 0 ] ), int.Parse ( pSize[ 1 ] ),
+                                                    new Vector2 ( int.Parse ( pos[ 0 ] ), int.Parse ( pos[ 1 ] ) ),
+                                                    texture, 0.0f, isStatic );
+                        } else {
+                            b = new Object ( world, int.Parse ( pSize[ 0 ] ), int.Parse ( pSize[ 1 ] ),
+                                                    new Vector2 ( int.Parse ( pos[ 0 ] ), int.Parse ( pos[ 1 ] ) ),
+                                                    texture, 1.0f, isStatic );
+                        }
 
 
                         bodies.Add ( name, b );
@@ -228,59 +287,18 @@ namespace Platformer {
         }
 
         const float walkSpeed = 2f;
-        bool heroMoveFlag = false;
-
-        bool first = true;
-        float lastBodyPosX = 0, lastBodyPosY = 0;
-        int frameCounter = 0;
 
         public override void Update ( GameTime gameTime ) {
             if ( Enabled ) {
-                if ( first ) {
-                    first = !first;
-                    lastBodyPosX = bodies[ "hero" ].Position.X;
-                    lastBodyPosY = bodies[ "hero" ].Position.Y;
-                }
-
-
-                bodies[ "hero" ].ApplyLinearImpulse ( new Vector2 ( -bodies[ "hero" ].LinearVelocity.X, 0 ) );
-                if ( Game1.kbManager[ Keys.A, Game1.KeyboardManager.PressType.ever ] && Game1.kbManager[ Keys.D, Game1.KeyboardManager.PressType.ever ] ) {
-                    heroMoveFlag = false;
-                    bodies[ "hero" ].SetDefaultAnimation ();
-                } else if ( Game1.kbManager[ Keys.A, Game1.KeyboardManager.PressType.ever ] ) {
-                    if ( !heroMoveFlag ) {
-                        bodies[ "hero" ].PlayAnimation ( "move" );
-                        heroMoveFlag = true;
-                    }
-                    bodies[ "hero" ].ApplyLinearImpulse ( new Vector2 ( -walkSpeed, 0 ) );
-                    bodies[ "hero" ].effects = SpriteEffects.FlipHorizontally;
-                } else if ( Game1.kbManager[ Keys.D, Game1.KeyboardManager.PressType.ever ] ) {
-                    if ( !heroMoveFlag ) {
-                        bodies[ "hero" ].PlayAnimation ( "move" );
-                        heroMoveFlag = true;
-                    }
-                    bodies[ "hero" ].ApplyLinearImpulse ( new Vector2 ( walkSpeed, 0 ) );
-                    bodies[ "hero" ].effects = SpriteEffects.None;
-                } else if ( heroMoveFlag ) {
-                    heroMoveFlag = false;
-                    bodies[ "hero" ].SetDefaultAnimation ();
-                }
-
-                if ( Game1.kbManager[ Keys.W, Game1.KeyboardManager.PressType.once ] ) {
-                    bodies[ "hero" ].ApplyLinearImpulse ( new Vector2 ( 0, -5f ) );
-                }
-
+                
                 bodies[ "hero" ].Update ( gameTime );
 
+                Vector2 lastBodyPos = bodies[ "hero" ].Position;
 
-                world.Step ( (float)gameTime.ElapsedGameTime.Milliseconds / 1000f );
+                world.Step ( (float)gameTime.ElapsedGameTime.Milliseconds / 700f );
 
-                const float maxShift = 2;
-                cameraShiftX = Math.Min ( maxShift, Math.Max ( -maxShift, cameraShiftX + bodies[ "hero" ].Position.X - lastBodyPosX ) );
-                cameraShiftY = Math.Min ( maxShift, Math.Max ( -maxShift, cameraShiftY + bodies[ "hero" ].Position.Y - lastBodyPosY ) );
-
-                lastBodyPosX = bodies[ "hero" ].Position.X;
-                lastBodyPosY = bodies[ "hero" ].Position.Y;
+                cameraShiftX = Math.Min ( maxShift, Math.Max ( -maxShift, cameraShiftX + bodies[ "hero" ].Position.X - lastBodyPos.X ) );
+                cameraShiftY = Math.Min ( maxShift, Math.Max ( -maxShift, cameraShiftY + bodies[ "hero" ].Position.Y - lastBodyPos.Y ) );
 
                 base.Update ( gameTime );
             }
@@ -288,6 +306,8 @@ namespace Platformer {
 
         public override void Draw ( GameTime gameTime ) {
             if ( Enabled ) {
+                Game.GraphicsDevice.Clear ( Color.CornflowerBlue ); // draw background
+
                 view = Matrix.CreateTranslation ( new Vector3 ( myCenter - Converter.ToPixelsVec ( bodies[ "hero" ].Position - new Vector2 ( cameraShiftX, cameraShiftY ) ), 0f ) );
                 spriteBatch.Begin ( SpriteSortMode.BackToFront, null, null, null, null, null, view );
                 foreach ( Object obj in bodies.Values ) {
